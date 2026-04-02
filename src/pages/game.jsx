@@ -1,4 +1,14 @@
 import { useEffect } from "react";
+import { createClient } from "@supabase/supabase-js";
+import { BACKEND_URL, GAME_ID } from "../constants"
+
+const supabase = createClient(
+  window.APP_CONFIG.supabaseUrl,
+  window.APP_CONFIG.supabaseAnonKey
+);
+
+
+
 
 export default function Game() {
   useEffect(() => {
@@ -19,6 +29,41 @@ export default function Game() {
       root.style.width = "100%";
       root.style.height = "100%";
     }
+  }, []);
+
+  useEffect(() => {
+    const init = async () => {
+      const { data } = await supabase.auth.getSession();
+      const session = data.session;
+
+      if (!session) {
+        window.location.href = "/";
+        return;
+      }
+      const user = session.user;
+
+      if (!user.email.endsWith("@iiitl.ac.in")) {
+        alert("Use institute email (@iiitl.ac.in)");
+        await supabase.auth.signOut();
+        window.location.href = "/";
+        return;
+      }
+
+      const token = session.access_token;
+
+      await fetch(BACKEND_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          gameId: GAME_ID,
+        }),
+      });
+    };
+
+    init();
   }, []);
 
   return (

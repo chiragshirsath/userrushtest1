@@ -1,23 +1,14 @@
 import { useEffect, useState } from "react";
-import { initializeApp } from "firebase/app";
-import { getAuth, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 import { BACKEND_URL, GAME_ID } from "../constants";
-
+import { createClient } from "@supabase/supabase-js";
 // Safe read from index.html
-const config = window.APP_CONFIG || {};
-
-const firebaseConfig = config.firebaseConfig;
 
 // Initialize Firebase only if config exists
-const app = firebaseConfig ? initializeApp(firebaseConfig) : null;
-const auth = app ? getAuth(app) : null;
-const provider = new GoogleAuthProvider();
-
+const supabase = createClient(
+  window.APP_CONFIG.supabaseUrl,
+  window.APP_CONFIG.supabaseAnonKey
+);
 // Force selection of student domain accounts (Optional but recommended)
-provider.setCustomParameters({
-  hd: "iiitl.ac.in",
-  prompt: "select_account"
-});
 
 export default function Login() {
   const [status, setStatus] = useState("");
@@ -44,48 +35,20 @@ export default function Login() {
   }, []);
 
   const handleLogin = async () => {
-    if (!auth) {
-      setStatus("Firebase config missing.");
-      return;
-    }
-
     setLoading(true);
-    setStatus("Logging in...");
+    setStatus("Redirecting to Google...");
 
     try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-
-      const idToken = await user.getIdToken();
-      setStatus("Authenticating with server...");
-
-      const response = await fetch(BACKEND_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
+      await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/game`,
         },
-        body: JSON.stringify({
-          idToken,
-          gameId: GAME_ID
-        })
       });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setStatus(data.message || "Successfully tracked participation!");
-        localStorage.setItem("idToken", idToken);
-
-        setTimeout(() => {
-          window.location.href = "/game";
-        }, 1000);
-      } else {
-        setStatus(data.error || "Failed to record tracking info.");
-      }
-    } catch (error) {
+    } 
+    catch (error) {
       console.error(error);
-      setStatus("Error logging in.");
-    } finally {
+      setStatus("Error starting login.");
       setLoading(false);
     }
   };
