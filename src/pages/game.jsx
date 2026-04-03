@@ -1,16 +1,16 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
-import { BACKEND_URL, GAME_ID } from "../constants"
+import { BACKEND_URL, GAME_ID } from "../constants";
 
 const supabase = createClient(
   window.APP_CONFIG.supabaseUrl,
   window.APP_CONFIG.supabaseAnonKey
 );
 
-
-
-
 export default function Game() {
+  const [score, setScore] = useState(0);
+  const [pos, setPos] = useState({ x: 50, y: 50 });
+
   useEffect(() => {
     document.documentElement.style.margin = "0";
     document.documentElement.style.padding = "0";
@@ -66,52 +66,60 @@ export default function Game() {
     init();
   }, []);
 
+  // Game logic: move box every 800ms
+  useEffect(() => {
+    const moveBox = () => {
+      setPos({
+        x: Math.random() * 80,
+        y: Math.random() * 80,
+      });
+    };
+
+    const interval = setInterval(moveBox, 800);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div
       style={{
         height: "100vh",
         width: "100vw",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        background: "linear-gradient(135deg, #020617 0%, #0f172a 45%, #111827 100%)",
+        position: "relative",
+        background:
+          "linear-gradient(135deg, #020617 0%, #0f172a 45%, #111827 100%)",
         fontFamily: "Arial, sans-serif",
         color: "white",
         overflow: "hidden",
-        boxSizing: "border-box"
       }}
     >
+      <h1 style={{ textAlign: "center", marginTop: "20px" }}>
+        🎯 Score: {score}
+      </h1>
+
+      <p style={{ textAlign: "center", color: "#cbd5e1" }}>
+        Click the moving box!
+      </p>
+
       <div
+        onClick={() => setScore(score + 1)}
         style={{
-          width: "min(90vw, 500px)",
-          padding: "40px",
-          borderRadius: "24px",
-          background: "rgba(255,255,255,0.06)",
-          backdropFilter: "blur(16px)",
-          border: "1px solid rgba(255,255,255,0.10)",
-          boxShadow: "0 24px 70px rgba(0,0,0,0.45)",
-          textAlign: "center"
+          position: "absolute",
+          left: `${pos.x}%`,
+          top: `${pos.y}%`,
+          width: "60px",
+          height: "60px",
+          background: "#22c55e",
+          borderRadius: "12px",
+          cursor: "pointer",
+          transition: "all 0.3s ease",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          fontWeight: "bold",
+          userSelect: "none",
         }}
       >
-        <h1
-          style={{
-            margin: "0 0 14px",
-            fontSize: "36px",
-            fontWeight: "800"
-          }}
-        >
-          🎮 Game Page
-        </h1>
-
-        <p
-          style={{
-            margin: 0,
-            fontSize: "16px",
-            color: "#cbd5e1"
-          }}
-        >
-          Your game starts here
-        </p>
+        +1
       </div>
     </div>
   );
